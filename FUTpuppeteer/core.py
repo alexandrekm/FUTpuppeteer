@@ -30,6 +30,7 @@ import signal
 import keyring
 from simplecrypt import encrypt, decrypt
 from binascii import hexlify, unhexlify
+from . import fut_xpath_selectors as select
 
 yaml = YAML()
 yaml.explicit_start = True
@@ -141,12 +142,17 @@ class Session(object):
                 if not disable_extensions:
                     ublock = 'cjpalhdlnbpafiamejdnhcphjbkeiagm'
                     futbin = 'adicaaffkmhgnfheifkjhopmambgfihl'
+                    tampermonkey = 'adicaaffkmhgnfheifkjhopmambgfihk'
                     if not os.path.exists(self.userdir + '/Default/Extensions/' + ublock):
                         multi_log(self, 'Installing ublock extension...', level='debug')
                         self.opts.add_extension('extensions/ublock.crx')
                     if not os.path.exists(self.userdir + '/Default/Extensions/' + futbin):
                         multi_log(self, 'Installing futbin extension...', level='debug')
                         self.opts.add_extension('extensions/futbin.crx')
+                    if not os.path.exists(self.userdir + '/Default/Extensions/' + tampermonkey):
+                        multi_log(self, 'Installing tampermonkey extension...', level='debug')
+                        self.opts.add_extension('extensions/tampermonkey.crx')
+                multi_log(self, 'Extensions installed...', level='debug')
                 self.driver = webdriver.Chrome(executable_path=Global.path_to_chromedriver_exe, chrome_options=self.opts)
                 if headless:
                     self.driver.set_window_position(-10000, 0)
@@ -258,17 +264,19 @@ class Session(object):
         self.credits = 0
         self.driver.get(url)
         print("Pausing so you can record\n\n\n\n\n\n\n\n")
-        sleep(10) # REMOVE AFTER VIDEO RECORDING
+        # sleep(10) # REMOVE AFTER VIDEO RECORDING
         # See if it auto-logs-in
         self.logged_in = False
         multi_log(self, 'Logging in...', level='info')
         login_tries = 0
         while not self.logged_in:
+            multi_log(self, 'not logged in', level='debug')
             login_tries += 1
             if login_tries > 10:
                 self.driver.get(url)
                 login_tries = 0
             progress = self.__login_progress__()
+            multi_log(self, 'login progress: ' + str(progress), level='debug')
             # Check if user/pass is needed
             if progress == 'ea_account':
                 multi_log(self, 'Attempting User/Pass...', level='debug')
@@ -281,7 +289,7 @@ class Session(object):
                     # noinspection PyUnresolvedReferences
                     self.__type_xpath__('//*[@id="password"]', self.user['password'], Global.micro_min)
                     multi_log(self, 'Entering user/pass...', level='debug')
-                    self.__click_xpath__('//*[@id="btnLogin"]', Global.micro_min)
+                    self.__click_xpath__('/html/body/div[2]/form/div[3]/div[1]/div[2]/a[1]/span', Global.micro_min)
                 except TimeoutException:
                     multi_log(self, 'No user/pass needed', level='debug')
             # Check if 2-factor code is needed
@@ -321,6 +329,7 @@ class Session(object):
                 except TimeoutException:
                     multi_log(self, 'No agreement needed...', level='debug')
         # Take care of unassigned items to prevent errors
+        multi_log(self, 'Login finished', level='debug')
         self.check_unassigned()
 
     #############################
@@ -353,7 +362,9 @@ class Session(object):
         self.__disable_click_shield__()
         if not self.__logged_in__():
             try:
-                self.__click_xpath__('//*[@id="Login"]/div/div/div[1]/div/button', Global.micro_min)
+                # self.__click_xpath__('//*[@id="Login"]/div/div/div[1]/div/button', Global.micro_min)
+                self.__click_xpath__('/html/body/section/div/div/div/button[1]', Global.micro_min)
+
             except TimeoutException:
                 pass
             try:
@@ -376,6 +387,9 @@ class Session(object):
                 return 'agreement'
             except (TimeoutException, NoSuchElementException, ElementNotVisibleException):
                 pass
+        else:
+            multi_log(self, 'Logged in', level='debug')
+
 
     def __get_items__(self, gp_element=None, gp_type=None, p_element=None, p_type=None, get_price=False, timeout=Global.small_max):
         attempts_left = 10
@@ -408,7 +422,7 @@ class Session(object):
                     items = parse.parse_item_list(p.find_elements_by_class_name('listFUTItem'), get_price=get_price, obj=self)
                     break
                 else:
-                    items = parse.parse_item_list(self.__get_class__('listFUTItem', as_list=True, timeout=timeout), get_price=get_price, obj=self)
+                    items = parse.parse_item_list(self.__get_class__('itemList', as_list=True, timeout=timeout), get_price=get_price, obj=self)
                     break
             except StaleElementReferenceException:
                 attempts_left -= 1
@@ -767,10 +781,10 @@ class Session(object):
             self.location = where
             nav = self.driver.find_element_by_tag_name('nav')
             if where == 'home':
-                nav.find_element_by_class_name('btnHome').click()
+                select.get_navigation_bar_selector("home", nav).click()
                 sleep(Global.micro_max)
                 try:
-                    transfer_tile = self.__get_class__('transferListTile', as_list=False)
+                    transfer_tile = self.__get_class__('ut-tile-transfer-list', as_list=False)
                     try:
                         self.current_tradepile_size = int(transfer_tile.find_element_by_class_name('count').text)
                     except ValueError:
@@ -778,26 +792,26 @@ class Session(object):
                 except (NoSuchElementException, TimeoutException):
                     sleep(Global.small_max)
                     try:
-                        transfer_tile = self.__get_class__('transferListTile', as_list=False)
+                        transfer_tile = self.__get_class__('ut-tile-transfer-list', as_list=False)
                         self.current_tradepile_size = int(transfer_tile.find_element_by_class_name('count').text)
                     except (NoSuchElementException, TimeoutException):
                         pass
                 check_for_unassigned()
             elif where == 'squads':
-                nav.find_element_by_class_name('btnSquads').click()
+                select.get_navigation_bar_selector(where, nav).click()
             elif where == 'sbc':
-                nav.find_element_by_class_name('btnSBC').click()
+                select.get_navigation_bar_selector(where, nav).click()
             elif where == 'transfers':
                 try:
-                    nav.find_element_by_class_name('btnTransfers').click()
+                    select.get_navigation_bar_selector(where, nav).click()
                     sleep(Global.micro_max)
-                    transfer_tile = self.__get_class__('transferListTile', as_list=False)
+                    transfer_tile = self.__get_class__('ut-tile-transfer-list', as_list=False)
                 except TimeoutException:
                     sleep(Global.med_max)
                     self.__focus__()
-                    nav.find_element_by_class_name('btnTransfers').click()
+                    select.get_navigation_bar_selector(where, nav).click()
                     sleep(Global.small_max)
-                    transfer_tile = self.__get_class__('transferListTile', as_list=False)
+                    transfer_tile = self.__get_class__('ut-tile-transfer-list', as_list=False)
                 try:
                     self.current_tradepile_size = int(transfer_tile.find_element_by_class_name('count').text)
                 except (NoSuchElementException, StaleElementReferenceException):
@@ -808,27 +822,28 @@ class Session(object):
                         pass
                 except ValueError:
                     pass
+                print("current trade pile size %s", self.current_tradepile_size)
             elif where == 'search' or ('search' in where and 'club' not in where):
                 self.location = 'xxx'
                 self.go_to('transfers')
-                self.__click_xpath__('/html/body/section/article/div')
+                self.__click_xpath__('/html/body/section/section/section/div[2]/div/div/div[2]')
                 self.location = 'search'
             elif where == 'transfer_list':
                 self.go_to('transfers')
-                self.__click_xpath__('/html/body/section/article/div[2]')
+                self.__click_xpath__('/html/body/section/section/section/div[2]/div/div/div[3]')
                 self.location = 'transfer_list'
             elif where == 'transfer_targets':
                 self.go_to('transfers')
-                self.__click_xpath__('/html/body/section/article/div[3]')
+                self.__click_xpath__('/html/body/section/section/section/div[2]/div/div/div[4]')
                 self.location = 'transfer_targets'
             elif where == 'store':
-                nav.find_element_by_class_name('btnStore').click()
+                select.get_navigation_bar_selector(where, nav).click()
                 check_for_unassigned()
             elif where == 'club':
-                nav.find_element_by_class_name('btnClub').click()
+                select.get_navigation_bar_selector(where, nav).click()
             elif where == 'players':
                 self.go_to('club')
-                self.__click_xpath__('//*[@id="ClubHub"]/div[1]')
+                self.__click_xpath__('//*[@id="ClubHub"]/div[1]/div[1]')
                 self.location = 'players'
             elif where == 'unassigned':
                 if self.location != 'home':
@@ -836,7 +851,7 @@ class Session(object):
                 self.driver.find_element_by_id('UnassignedTile').click()
                 self.location = 'unassigned'
             elif where == 'settings':
-                nav.find_element_by_class_name('btnSettings').click()
+                select.get_navigation_bar_selector("settings", nav).click()
             elif where == 'logout':
                 self.go_to('settings')
                 self.__click_xpath__('/html/body/section/div/div/div/div[2]/div[2]/div/ul[1]/button[3]')
@@ -950,6 +965,7 @@ class Session(object):
         return self.current_strategy, self.last_console
 
     def check_unassigned(self):
+        multi_log(self, 'Check unassigned', level='debug')
         if self.location != 'home':
             self.go_to('home')
         try:
@@ -1024,7 +1040,9 @@ class Session(object):
 
     def get_credits(self):
         try:
-            found = self.__get_xpath__('//*[@id="user-coin"]/div/span[2]', timeout=Global.micro_min).text
+            #found = self.__get_xpath__('//*[@id="user-coin"]/div/span[2]', timeout=Global.micro_min).text
+            found = self.__get_xpath__('//*[@class="view-navbar-currency-coins"]', timeout=Global.micro_min).text
+            multi_log(self, 'Coins: '+found, level="debug")
             if found != '' and '-' not in found:
                 found = parse.price_parse(found)
                 if found > 0:

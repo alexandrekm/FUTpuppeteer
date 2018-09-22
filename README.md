@@ -90,3 +90,18 @@ Click this image for a video demo that covers a few capabilities:
     * Increased risk can be mitigated by frequently running a separate bot that logs in via Selenium (like this one) and compares all HTTP method parameters and cookies using BrowserProxyMob to make sure they match what oczker's API is sending
 - [ ] Write unit tests
 - [ ] This code is likely pretty inefficient. It could probably be made better by using more appropriate data structures and improving time and space complexity of some of the functions--especially the ones involving the player database and the ones that find sniping filters
+
+- [ ] install python3.7
+- [ ]install conda
+- [ ] run conda prompt as admin
+- [ ] conda install pycrypto
+
+pip install simple-crypt selenium ast flask ruamel.YML retrying numpy psutil keyring
+
+
+Microsoft Visual C++ 14.0 standalone: Visual C++ Build Tools 2015 (x86, x64, ARM)
+This is a standalone version of Visual C++ 14.0 compiler, you don't need to install Visual Studio 2015.
+http://landinghub.visualstudio.com/visual-cpp-build-tools
+Install Microsoft Visual C++ Build Tools 2015. Check Windows 8.1 SDK and Windows 10 SDK options.
+
+The setuptools Python package version must be at least 24.0.

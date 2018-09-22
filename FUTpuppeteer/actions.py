@@ -92,6 +92,7 @@ def bid(obj, item, amount):
 
 @retry(wait_fixed=500, stop_max_attempt_number=3)
 def buy_pack(obj, category, pack_type, send_all_to_club=False, quick_sell_duplicates=False, sell_duplicate_players=True):
+    #items = actions.buy_pack(obj, 'Bronze', 'Bronze Pack', send_all_to_club=False, quick_sell_duplicates=True, sell_duplicate_players=True)
     obj.rate_limit()
     if obj.location != 'store':
         obj.go_to('store')
@@ -101,13 +102,19 @@ def buy_pack(obj, category, pack_type, send_all_to_club=False, quick_sell_duplic
     except TimeoutException:
         raise Exception('Unacceptable Pack Category')
     try:
-        header = obj.__get_xpath__("//h1[text()='{}']".format(pack_type.upper()))
-        parent = header.find_element_by_xpath('../..')
+        header = obj.__get_xpath__("//span[text()='{}']".format(pack_type.upper()))
+        parent = header.find_element_by_xpath('../../../..')
         obj.__check_for_errors__()
-        parent.find_element_by_xpath(".//button[contains(@class, 'cCoins')]").click()
+
+        parent.find_element_by_xpath(".//button[contains(@class, 'coins')]").click()
         obj.keep_alive(Global.small_min)
+
+        #header = obj.__get_xpath__("//h1[text()='{}']".format("400"))
+        #print("header " +str(header))
+
         modal = obj.__get_class__('ui-dialog-type-message', as_list=False)
         obj.__check_for_errors__()
+
         modal.find_element_by_xpath("//*[contains(text(), 'Ok')]").click()
         obj.keep_alive(Global.small_max)
         obj.location = 'unassigned'
@@ -123,6 +130,7 @@ def buy_pack(obj, category, pack_type, send_all_to_club=False, quick_sell_duplic
         if sell_duplicate_players:
             duplicate_players = obj.__get_items__(p_element='../..', p_type='xpath', gp_element="//*[contains(text(), 'DUPLICATES')]", gp_type='xpath',
                                                   get_price=True)
+            print("sell duplicates " + str(duplicate_players))
             for dupe in duplicate_players:
                 if dupe['item_type'] == 'player':
                     price = dupe['futbin_price']

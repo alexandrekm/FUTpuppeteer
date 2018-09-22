@@ -1,6 +1,6 @@
 from FUTpuppeteer import actions, info
 from FUTpuppeteer.misc import multi_log, Global
-from selenium.common.exceptions import NoSuchElementException, TimeoutException
+from selenium.common.exceptions import NoSuchElementException, TimeoutException, ElementNotVisibleException
 from retrying import retry
 from datetime import datetime
 from . import retry_decorator, check_sleep
@@ -30,6 +30,7 @@ def bpm(obj):
         for item in items:
             if item['item_type'] == 'player':
                 price = item['futbin_price']
+                multi_log(obj, "Process Item" + str(item))
                 tier = info.get_tier(price)
                 bin_price = max(250, info.round_down(price * obj.bin_settings[tier]['sell_percent'], Global.rounding_tiers[tier]))
                 if bin_price > 350:
@@ -83,12 +84,14 @@ def bpm(obj):
         obj.keep_alive(Global.small_max)
 
     def check_unassigned():
-        page_title = obj.__get_class__('pageTitle', as_list=False).text.lower()
+        page_title = obj.__get_class__('title', as_list=False).text.lower()
+        print(page_title)
         if page_title != 'unassigned':
             obj.__check_for_errors__()
             try:
                 modal = obj.__get_class__('ui-dialog-type-message', as_list=False)
                 modal.find_element_by_xpath(".//*[contains(text(), 'Take Me There')]").click()
+                #modal.find_element_by_xpath(".//*[contains(text(), 'TAKE ME THERE')]").click()
                 obj.__check_for_errors__()
                 items = obj.__get_items__(get_price=True)
                 process_items(items)
@@ -99,8 +102,13 @@ def bpm(obj):
                     obj.go_to('unassigned')
                     items = obj.__get_items__(get_price=True)
                     process_items(items)
-            except (NoSuchElementException, TimeoutException):
+            except (NoSuchElementException, TimeoutException, ElementNotVisibleException):
                 pass
+        elif page_title == 'unassigned':
+            obj.__check_for_errors__()
+            items = obj.__get_items__(get_price=True)
+            process_items(items)
+
 
     @retry(wait_fixed=250, stop_max_attempt_number=3)
     def get_items():

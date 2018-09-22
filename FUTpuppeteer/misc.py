@@ -88,7 +88,7 @@ log.addHandler(log_file_handler)
 log_file_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(message)s'))
 
 
-def multi_log(obj=None, message=None, level='info', notify=False, title='FUTpuppeteer Notification', icon_url='http://www.futwiz.com/assets/img/fifa18/badges/888888.png',
+def multi_log(obj=None, message=None, level='debug', notify=False, title='FUTpuppeteer Notification', icon_url='http://www.futwiz.com/assets/img/fifa18/badges/888888.png',
               link=None):
     message = parse.remove_accents(message)
     if obj:
