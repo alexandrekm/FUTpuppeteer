@@ -20,4 +20,5 @@ error.*
 __pycache__/
 /.idea/
 /.vscode/
+venv*
 FUTpuppeteer/strategies/test.py
